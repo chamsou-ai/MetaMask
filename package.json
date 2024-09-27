@@ -1,0 +1,19 @@
+{
+  "name": "metamask",
+  "version": "1.0.0",
+  "description": "Building and Deploying a DeFi MetaMass Wallet Clone for Secure Transactions",
+  "main": "ethers.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chamsou-ai/MetaMask.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chamsou-ai/MetaMask/issues"
+  },
+  "homepage": "https://github.com/chamsou-ai/MetaMask#readme"
+}
