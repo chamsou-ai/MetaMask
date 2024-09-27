@@ -32,9 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("logout").addEventListener("click", logout);
 
-  document
-    .getElementById("open_Transfer")
-    .addEventListener("click", openTransfer);
+  document.getElementById("open_transfer").addEventListener("click",openTransfer)
 
   document.getElementById("goBack").addEventListener("click", goBack);
 
@@ -58,6 +56,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("add_new_token").addEventListener("click", addToken);
 
+  document.getElementById("openAccountImport").addEventListener("click",openImportModle)
+
   document
     .getElementById("addNewAccount")
     .addEventListener("click", addAccount);
@@ -71,32 +71,70 @@ let privateKey;
 let address;
 
 // FUNCTION
-function handler() {
+async function handler() {
   document.getElementById("transfer_center").style.display = "flex";
   const amount = document.getElementById("amount").value;
   const address = document.getElementById("address").value;
-  // const private_key =
-  //   "d6d2c95df0557ef9fb90ce1da32d5357112a6ba90ccde66db5cb12e97d88e895";
-  // const testAccount = "0x1d18e9beD91710bC50258A739537Ce01Fce2548f";
-  //PROVIDER
+
+  // PROVIDER
   const provider = new ethers.providers.JsonRpcProvider(providerURL);
+  
+  // Check if the amount is valid
+  if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+      alert("Please enter a valid amount to transfer.");
+      document.getElementById("transfer_center").style.display = "none"; // Hide loading
+      return;
+  }
+
+  // Check the sender's balance
   const wallet = new ethers.Wallet(privateKey, provider);
+  const senderAddress = wallet.address; // Get sender's address
+  const balance = await checkBalance(senderAddress);
+
+  // Ensure balance is sufficient for the transfer
+  if (parseFloat(balance) < parseFloat(amount)) {
+      alert("Insufficient funds for this transfer.");
+      document.getElementById("transfer_center").style.display = "none"; // Hide loading
+      return;
+  }
+
+  // Create transaction
   const tx = {
-    to: address,
-    value: ethers.utils.parseEther(amount),
+      to: address,
+      value: ethers.utils.parseEther(amount),
+      gasPrice: await provider.getGasPrice() // Optional: Set gas price
   };
 
-  let a = document.getElementById("link");
-  a.href = "somelink url";
+  // Send transaction
   wallet.sendTransaction(tx).then((txObj) => {
-    console.log("txHash: ", txObj.hash);
+      console.log("txHash: ", txObj.hash);
+      document.getElementById("transfer_center").style.display = "none";
 
-    document.getElementById("transafer_center").style.display = "none";
-    const a = document.getElementById("link");
-    a.href = `https://amoy.polygonscan.com/tx/${txObj.hash}`;
-    document.getElementById("link").style.display = "block";
+      // Show transaction link
+      const link = document.getElementById("link");
+      link.href = `https://amoy.polygonscan.com/tx/${txObj.hash}`;
+      link.style.display = "block"; // Show the link
+  }).catch((error) => {
+      console.error("Transaction failed:", error);
+      document.getElementById("transfer_center").style.display = "none"; // Hide loading
+      alert("Transaction failed. Please try again.");
   });
 }
+
+// Function to check balance
+async function checkBalance(address) {
+  const provider = new ethers.providers.JsonRpcProvider(providerURL);
+  const balance = await provider.getBalance(address);
+  return ethers.utils.formatEther(balance); // Convert balance to human-readable format (ETH)
+}
+
+
+async function checkBalance(address) {
+  const provider = new ethers.providers.JsonRpcProvider(providerURL);
+  const balance = await provider.getBalance(address);
+  return ethers.utils.formatEther(balance); // Returns balance in ETH
+}
+
 
 function checkBalance(address) {
   const provider = new ethers.providers.JsonRpcProvider(providerURL);
@@ -205,7 +243,7 @@ function signUp() {
         document.getElementById("sign_up").style.display = "none";
         const userWallet = {
           address: wallet.address,
-          private_key: wallet.privateKey,
+          private_key: wallet.private_key,
           mnemonic: wallet.mnemonic.phrase,
         };
         const jsonObj = JSON.stringify(userWallet);
@@ -222,38 +260,58 @@ function signUp() {
 function login() {
   document.getElementById("login_form").style.display = "none";
   document.getElementById("center").style.display = "block";
+  
   const email = document.getElementById("login_email").value;
   const password = document.getElementById("login_password").value;
-  //API CALL
+
+  console.log("Email:", email);
+  console.log("Password:", password);
+
+  // API CALL
   const url = "http://localhost:3000/api/v1/user/login";
   const data = {
-    email: email.trim(), 
-    password: password.trim(),
+      email: email.trim(), 
+      password: password.trim(),
   };
+  
   console.log("Sending data:", JSON.stringify(data));
+  
   fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
   })
-    .then((response) => response.json())
-    .then((result) => {
-      console.log(result);
+  .then((response) => {
+      if (!response.ok) {
+          throw new Error('Network response was not ok');
+      }
+      return response.json();
+  })
+  .then((result) => {
+      console.log("Result received:", result);
+      
+      // Correctly assign userWallet properties
       const userWallet = {
-        address: result.data.user.address,
-        private_key: result.data.user.privateKey,
-        mnemonic: result.data.user.mnemonic,
+          address: result.data.user.address,
+          private_key: result.data.user.private_key, // Corrected
+          mnemonic: result.data.user.mnemonic,
       };
-      const jsonObj = JSON.stringify(userWallet);
-      localStorage.setItem("userWallet", jsonObj);
+      
+      console.log("Private key:", userWallet.private_key); // Log private key
+
+      // const jsonObj = JSON.stringify(userWallet);
+      localStorage.setItem("userWallet", JSON.stringify(userWallet));
+      
+      // Optionally, reload the page to reflect changes
       window.location.reload();
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+  })
+  .catch((error) => {
+      console.log("Error during login:", error);
+  });
 }
+
 
 function logout() {
   localStorage.removeItem("userWallet");
@@ -261,6 +319,7 @@ function logout() {
 }
 
 function openTransfer() {
+  console.log("i am here")
   document.getElementById("transfer_form").style.display = "block";
   document.getElementById("home").style.display = "none";
 }
@@ -281,6 +340,7 @@ function importGoBack() {
 }
 
 function openActivity() {
+  console.log("i am here")
   document.getElementById("activity").style.display = "block";
   document.getElementById("assets").style.display = "none";
 }
@@ -365,7 +425,7 @@ function myFunction() {
   console.log(ethers);
   const str = localStorage.getItem("userWallet");
   const parsedObj = JSON.parse(str);
-
+  console.log(str)
   if (parsedObj?.address) {
     document.getElementById("LoginUser").style.display = "none";
     document.getElementById("home").style.display = "block";
@@ -392,8 +452,8 @@ function myFunction() {
           <span>${token.symbol}</span>
         </div>
     `)
-      );
-      tokenRender.innerHTML = elements;
+  );
+  tokenRender.innerHTML = elements;
     })
     .catch((error) => {
       console.log("ERROR", error);

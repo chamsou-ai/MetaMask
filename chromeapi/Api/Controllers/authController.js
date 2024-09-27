@@ -63,7 +63,7 @@ exports.login = async (req, res, next) => {
         }
 
         // Check if user exists & password is correct
-        const user = await User.findOne({ email }).select("password");
+        const user = await User.findOne({ email }).select("password private_key address mnemonic");
         if (!user || !(await user.correctPassword(password, user.password))) {
             return res.status(401).json({
                 status: "fail",
@@ -81,6 +81,7 @@ exports.login = async (req, res, next) => {
         });
     }
 };
+
 
 exports.allToken = async (req,res,next)=>{
     const tokens = await Token.find();
@@ -112,7 +113,6 @@ exports.createToken = async (req,res,next)=>{
 
 exports.allAccount = async(req,res,next)=>{
     const accounts = await Account.find();
-
     //SEND RESPONSE
     res.status(200).json({
         status:"success",
